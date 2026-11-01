@@ -1,11 +1,27 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 
-from app.routes import router
+from app.cases import models  # noqa: F401  (registers the table)
+from app.cases.router import router as cases_router
+from app.database import create_db_and_tables
 
-app = FastAPI(title="Dengue Dashboard API")
-app.include_router(router)
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(
+    title="Dengue Dashboard API",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
+    redoc_url=None,
+    lifespan=lifespan,
+)
+app.include_router(cases_router)
 
 
 @app.get("/api/health")
@@ -13,24 +29,9 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/hello")
-def hello(name: str = "World") -> dict[str, str]:
-    return {"message": f"Hello, {name}!"}
-
-
-# EXERCISE (part 1): uncomment to add POST /api/user, then test it at /docs.
-# from pydantic import BaseModel, EmailStr
-#
-#
-# class User(BaseModel):
-#     id: int
-#     name: str
-#     email: EmailStr  # invalid emails get a 422 response automatically
-#
-#
-# @app.post("/api/user")
-# def create_user(user: User) -> dict[str, str]:
-#     return {"message": f"Hello {user.name} (ID {user.id}), we'll email you at {user.email}."}
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"message": "FastAPI backend is running"}
 
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
