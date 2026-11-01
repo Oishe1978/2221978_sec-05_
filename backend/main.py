@@ -2,7 +2,10 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-app = FastAPI(title="FastAPI + React")
+from app.routes import router
+
+app = FastAPI(title="Dengue Dashboard API")
+app.include_router(router)
 
 
 @app.get("/api/health")
